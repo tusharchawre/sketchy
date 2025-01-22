@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import {z} from "zod"
 
 export const register = async (values: z.infer<typeof RegisterSchema>) => {
-    const res = await fetch(`${process.env.HTTP_URL}/signup`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_HTTP_URL}/signup`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -13,7 +13,6 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
     })
 
     if (res.status === 200) {
-        redirect("/signin")
         return res.json()
     }
 

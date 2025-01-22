@@ -109,8 +109,6 @@ app.post("/room", middleware , async (req, res)=> {
         return;
     }
 
-
-    // @ts-ignore
     const userId = req.userId
 
     if(!userId){
@@ -150,7 +148,7 @@ app.post("/room", middleware , async (req, res)=> {
     })
 })
 
-app.get("/room/:roomName", async (req, res)=> {
+app.get("/room/:roomName",middleware, async (req, res)=> {
     const roomName = req.params.roomName
 
     const room = await prismaClient.room.findFirst({
@@ -166,6 +164,27 @@ app.get("/room/:roomName", async (req, res)=> {
         room
     })
 
+})
+
+app.get("/user", middleware , async (req, res)=>{
+    const userId = req.userId
+
+    const user = await prismaClient.user.findUnique({
+        where:{
+            id: userId
+        },
+        select:{
+            username: true,
+            id: true,
+            email: true,
+            room: true,
+            shapes: true
+        }
+    })
+
+    res.json({
+        user
+    })
 })
 
 

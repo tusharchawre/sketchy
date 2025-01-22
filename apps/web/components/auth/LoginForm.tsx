@@ -10,8 +10,11 @@ import { Button } from "../ui/button"
 import { useTransition } from "react"
 import { register } from "@/actions/register"
 import { login } from "@/actions/login"
+import { useRouter } from "next/navigation"
 
 export function LoginForm() {
+
+    const router = useRouter()
 
     const [isPending , startTransition] = useTransition()
 
@@ -28,6 +31,7 @@ export function LoginForm() {
             startTransition(() => login(values)
             .then(res => {
                 localStorage.setItem("token", res.token)
+                router.push("/")
             })
             .catch(err => {
                 console.log(err)

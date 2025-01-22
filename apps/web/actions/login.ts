@@ -1,11 +1,11 @@
 "use server"
 
 import { LoginSchema } from "@repo/common/types"
-import { redirect } from "next/navigation"
+
 import { z } from "zod"
 
 export const login = async (values: z.infer<typeof LoginSchema>) => {
-    const res = await fetch(`${process.env.HTTP_URL}/signin`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_HTTP_URL}/signin`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -14,7 +14,6 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
     })
 
     if(res.status === 200){
-        redirect("/")
        return res.json()
     }
    

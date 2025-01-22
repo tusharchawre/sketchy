@@ -9,8 +9,10 @@ import { Input } from "../ui/input"
 import { Button } from "../ui/button"
 import { useTransition } from "react"
 import { register } from "@/actions/register"
+import { useRouter } from "next/navigation"
 
 export function RegisterForm() {
+    const router = useRouter()
 
     const [isPending , startTransition] = useTransition()
 
@@ -27,7 +29,7 @@ export function RegisterForm() {
         const onSubmit =  (values : z.infer<typeof RegisterSchema>) => {
             startTransition(() => register(values)
             .then(res => {
-                console.log(res)
+                router.push("/signin")
             })
             .catch(err => {
                 console.log(err)

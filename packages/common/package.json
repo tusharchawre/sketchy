@@ -1,0 +1,13 @@
+{
+    "name": "@repo/common",
+    "version": "1.0.0",
+    "exports": {
+        "./types": "./src/types.ts"
+    },
+    "devDependencies": {
+        "@repo/typescript-config": "workspace:*"
+    },
+    "dependencies": {
+        "zod": "^3.24.1"
+    }
+}

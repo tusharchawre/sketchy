@@ -55,6 +55,7 @@ wss.on("connection", function connection(ws, request){
         if(parsedData.type === "join_room"){
             const user = users.find(x => x.ws === ws )
             user?.rooms.push(parsedData.roomId)
+            ws.send("Good")
         }
 
         if(parsedData.type === "leave_room"){

@@ -148,12 +148,15 @@ app.post("/room", middleware , async (req, res)=> {
     })
 })
 
-app.get("/room/:roomName",middleware, async (req, res)=> {
-    const roomName = req.params.roomName
+app.get("/room/:roomId", async (req, res)=> {
+    const roomId = req.params.roomId
+
+
+
 
     const room = await prismaClient.room.findFirst({
         where:{
-            roomName
+            id: Number(roomId)
         },
         include: {
             shape: true

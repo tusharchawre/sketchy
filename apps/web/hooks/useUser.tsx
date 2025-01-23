@@ -32,7 +32,6 @@ export const useUser = () => {
             
            }
            catch(err : any){
-                setError(err.message)
            }
            finally{
             setIsLoading(false)

@@ -7,16 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
-import { useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 
 import { useRouter } from "next/navigation"
 
 
+
+
+
 export function CreateRoomForm() {
 
-    const router = useRouter()
+    const [error, setError] = useState("")
 
-    const [isPending , startTransition] = useTransition()
 
     const form = useForm<z.infer<typeof CreateRoomSchema>>({
         resolver: zodResolver(CreateRoomSchema),
@@ -25,12 +27,38 @@ export function CreateRoomForm() {
         }
     })
 
-    const token = JSON.stringify(localStorage.getItem('token'))
 
-        const onSubmit =  (values : z.infer<typeof CreateRoomSchema>) => {
-            
+    const onSubmit = async (values: z.infer<typeof CreateRoomSchema>) => {
+        setError("")
+
+
+
+
+        const token = localStorage.getItem("token")
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_HTTP_URL}/room` , {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `${token}`,
+            },
+            body: JSON.stringify(values)
+        })
+
+        if(!response.ok){
+            throw new Error("Something went wrong!")
         }
-    
+
+        const responseData = await response.json()
+
+        if(responseData.error){
+            setError(responseData.error)
+        }
+        else{
+            console.log(responseData)
+        }
+    }
+
 
     
 
@@ -53,18 +81,21 @@ export function CreateRoomForm() {
                         <FormItem>
                             <FormLabel>Room Name</FormLabel>
                             <FormControl>
-                                <Input disabled={isPending} placeholder="Enter Room Name" type="text" {...field} />
+                                <Input  placeholder="Enter Room Name" type="text" {...field} />
                             </FormControl>
                             <FormMessage />
+                            {error != "" && <FormMessage>{error}</FormMessage>}
                             <FormDescription>
                                 This is your public display room name.
                             </FormDescription>
+
                         </FormItem>
                     )}
                     />
 
-                
-                <Button type="submit" disabled={isPending} className="w-full mt-4">
+                    {/* TODO: Auto-gen button for roomNames */}
+
+                <Button type="submit"  className="w-full mt-4">
                     Create Room
                 </Button>
                 </form>

@@ -55,7 +55,6 @@ wss.on("connection", function connection(ws, request){
         if(parsedData.type === "join_room"){
             const user = users.find(x => x.ws === ws )
             user?.rooms.push(parsedData.roomId)
-            ws.send("Good")
         }
 
         if(parsedData.type === "leave_room"){
@@ -69,27 +68,27 @@ wss.on("connection", function connection(ws, request){
 
         if(parsedData.type === "draw"){
             const roomId = parsedData.roomId
-            const message = parsedData.message
+            const data = parsedData.data
 
             await prismaClient.shape.create({
                 data: {
                     roomId: Number(roomId),
-                    data: message,
+                    data,
                     userId
                 }
             })
 
 
             users.forEach(user => {
-                if(user.rooms.includes(roomId)){
+                if(user.rooms.includes(roomId) && user.ws !== ws){
                     user.ws.send(JSON.stringify({
                         type: "draw",
-                        message: message,
+                        data,
                         roomId
                     }))
                 }
             })
-
+ 
         }
 
     })

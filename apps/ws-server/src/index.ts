@@ -91,5 +91,28 @@ wss.on("connection", function connection(ws, request){
  
         }
 
+
+        if(parsedData.type === "erase"){
+            const roomId = parsedData.roomId
+            const data = parsedData.data
+
+            await prismaClient.shape.deleteMany({
+                where:{
+                    data,
+                    roomId
+                }
+            })
+
+            users.forEach(user => {
+                if(user.rooms.includes(roomId) && user.ws !== ws){
+                    user.ws.send(JSON.stringify({
+                        type: "erase",
+                        data,
+                        roomId
+                    }))
+                }
+            })
+        }
+
     })
 })

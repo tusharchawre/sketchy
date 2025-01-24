@@ -2,6 +2,7 @@ import { Circle, Eraser, HandIcon, Pencil, RectangleHorizontalIcon, Slash } from
 import { ToolButton } from "./ToolButton"
 import { Tool } from "@/canvas/Canvas"
 import { ReactNode } from "react"
+import { Separator } from "./ui/separator"
 
 interface ToolbarProps{
     activeTool : Tool
@@ -46,11 +47,19 @@ export const Toolbar = ({activeTool, setActiveTool}: ToolbarProps) => {
 
 
     return(
-        <div className="w-fit py-2 px-4 fixed top-5 left-[50%] -translate-x-[50%]">
-            <div className="flex bg-[#232329] px-4 py-1 rounded-md gap-3">
-            {Tool.map((tool)=>(
-                <ToolButton active={activeTool === tool.tool} onClick={()=>setActiveTool(tool.tool)} icon={tool.icon} shortcut={tool.shortcut} tool={tool.tool} />
-            ))}
+        <div className="w-fit h-16 py-2 px-4 fixed top-5 left-[50%] -translate-x-[50%]">
+            <div className="flex bg-[#232329] px-4 py-1 rounded-md gap-3 h-full">
+            {Tool.map((tool)=>
+                { 
+                    return (<><ToolButton active={activeTool === tool.tool} onClick={()=>setActiveTool(tool.tool)} icon={tool.icon} shortcut={tool.shortcut} tool={tool.tool} />
+
+                    {tool.tool === "grab" ? (<Separator orientation="vertical" className="bg-white/20 mx-1" />): null}
+                    
+                    
+                    </>)
+                
+                }
+            )}
             </div>
             
         </div>

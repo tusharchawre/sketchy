@@ -6,21 +6,33 @@ type Shape = {
     y: number;
     width: number;
     height: number;
+    strokeWidth: number;
+    strokeFill: string;
+    bgFill: string;
 } | {
     type: "ellipse";
     centerX: number,
     centerY: number,
     radX: number,
     radY: number
+    strokeWidth: number;
+    strokeFill: string; 
+    bgFill: string;
 } | {
     type: "line";
     fromX: number;
     fromY: number;
     toX: number;
     toY: number;
+    strokeWidth: number;
+    strokeFill: string; 
+
 } | {
     type: "pencil"
     points : {x: number, y:number}[]
+    strokeWidth: number;
+    strokeFill: string; 
+
 
 }
 
@@ -41,7 +53,10 @@ export class Game {
     private scale: number = 1
     private onScaleChangeCallback: (scale: number) => void;
     public outputScale: number = 1
-
+    private  strokeWidth: number = 1   
+    private  strokeFill: string = "rgba(255, 255, 255)"
+    private  bgFill: string = "rgba(18, 18, 18)"
+    
     constructor(
         canvas: HTMLCanvasElement , 
         roomId: string , 
@@ -110,6 +125,21 @@ export class Game {
         this.activeTool = tool
     }
 
+    setStrokeWidth(width: number){
+        this.strokeWidth = width
+        this.clearCanvas()
+    }
+
+    setStrokeFill(fill: string){
+        this.strokeFill = fill
+        this.clearCanvas()
+    }
+
+    setBgFill(fill: string){
+        this.bgFill = fill
+        this.clearCanvas()
+    }
+
     clearCanvas() {
         this.ctx.setTransform(this.scale, 0, 0, this.scale, this.panX, this.panY);
         this.ctx.clearRect(
@@ -127,21 +157,19 @@ export class Game {
             // Adjusts the scale of the canvas
             this.canvas.width/ this.scale, 
             this.canvas.height / this.scale);
-        this.ctx.strokeStyle = "rgba(255, 255, 255)"
-
 
         this.existingShape.map((shape: Shape)=>{
             if(shape.type == "rect"){
-                this.drawRect(shape.x, shape.y, shape.width, shape.height);
+                this.drawRect(shape.x, shape.y, shape.width, shape.height, shape.strokeWidth, shape.strokeFill, shape.bgFill);
             }
             else if (shape.type === "ellipse"){
-                this.drawEllipse(shape.centerX , shape.centerY, shape.radX, shape.radY)
+                this.drawEllipse(shape.centerX , shape.centerY, shape.radX, shape.radY, shape.strokeWidth, shape.strokeFill, shape.bgFill)
             }
             else if (shape.type === "line"){
-                this.drawLine(shape.fromX, shape.fromY, shape.toX, shape.toY)
+                this.drawLine(shape.fromX, shape.fromY, shape.toX, shape.toY, shape.strokeWidth, shape.strokeFill)
             }
             else if (shape.type === "pencil"){
-                this.drawPencil(shape.points)
+                this.drawPencil(shape.points, shape.strokeWidth, shape.strokeFill)
             }
         })
 
@@ -160,7 +188,10 @@ export class Game {
         if(this.activeTool === "pencil"){
             this.existingShape.push({
                 type: "pencil",
-                points: [{x , y}]
+                points: [{x , y}],
+                strokeWidth: this.strokeWidth,
+                strokeFill: this.strokeFill,
+
             })
         }
         else if (this.activeTool === "erase") {
@@ -181,7 +212,6 @@ export class Game {
             const height = y - this.startY
     
             this.clearCanvas()
-            this.ctx.strokeStyle = "rgba(255, 255, 255)";
 
             const activeTool = this.activeTool
 
@@ -190,7 +220,10 @@ export class Game {
                     this.startX,
                     this.startY,
                     width,
-                    height
+                    height,
+                    this.strokeWidth,
+                    this.strokeFill,
+                    this.bgFill
                 )
             } else if(activeTool === "ellipse"){
                 const centerX = this.startX + width / 2;
@@ -201,15 +234,18 @@ export class Game {
                     centerX,
                     centerY,
                     radX,
-                    radY
+                    radY,
+                    this.strokeWidth,
+                    this.strokeFill,    
+                    this.bgFill
                 )
             } else if(activeTool === "line"){
-                this.drawLine(this.startX,this.startY,x,y)
+                this.drawLine(this.startX,this.startY,x,y,  this.strokeWidth, this.strokeFill)
             } else if(activeTool === "pencil"){
                 const currentShape = this.existingShape[this.existingShape.length - 1]
                 if(currentShape?.type === "pencil" ){
                     currentShape.points.push({x , y})
-                    this.drawPencil(currentShape.points)
+                    this.drawPencil(currentShape.points, this.strokeWidth, this.strokeFill)
                 }
             } else if (activeTool === "erase"){
                 this.erase(x, y)
@@ -295,19 +331,27 @@ export class Game {
 
 
 
-    drawRect(x:number , y:number , width: number, height: number){
+    drawRect(x:number , y:number , width: number, height: number, strokeWidth: number, strokeFill: string, bgFill: string){
         // If we draw right to left, width is -ve and so postion of mouse + (-ve width) gives top left corner
         const posX = width < 0 ? x + width : x;
         const posY = height < 0 ? y + height : y;
         const normalizedWidth = Math.abs(width);
         const normalizedHeight = Math.abs(height);
+
+        strokeWidth = strokeWidth || 1;
+        strokeFill = strokeFill || "rgba(255, 255, 255)";
+        bgFill = bgFill || "rgba(18, 18, 18)";
     
         const radius = Math.min(Math.abs(Math.max(normalizedWidth, normalizedHeight) / 20), normalizedWidth / 2, normalizedHeight / 2);
     
+        
 
         // RoundRect : https://stackoverflow.com/a/3368118
         this.ctx.beginPath();
         this.ctx.moveTo(posX + radius, posY);
+        this.ctx.strokeStyle = strokeFill;
+        this.ctx.lineWidth = strokeWidth;
+        this.ctx.fillStyle = bgFill;
         this.ctx.lineTo(posX + normalizedWidth - radius, posY);
         this.ctx.quadraticCurveTo(posX + normalizedWidth, posY, posX + normalizedWidth, posY + radius);
         this.ctx.lineTo(posX + normalizedWidth, posY + normalizedHeight - radius);
@@ -317,26 +361,43 @@ export class Game {
         this.ctx.lineTo(posX, posY + radius);
         this.ctx.quadraticCurveTo(posX, posY, posX + radius, posY);
         this.ctx.closePath();
+        this.ctx.fill();
         this.ctx.stroke();
         // this.ctx.strokeRect(x , y, width, height)
     }
 
-    drawEllipse(x: number, y:number, width: number , height: number){
+    drawEllipse(x: number, y:number, width: number , height: number, strokeWidth: number, strokeFill: string, bgFill: string){
+        strokeWidth = strokeWidth || 1;
+        strokeFill = strokeFill || "rgba(255, 255, 255)";    
+        bgFill = bgFill || "rgba(18, 18, 18)";
+
         this.ctx.beginPath()
+        this.ctx.strokeStyle = strokeFill;
+        this.ctx.lineWidth = strokeWidth;   
+        this.ctx.fillStyle = bgFill;
         this.ctx.ellipse(x, y, width, height, 0 , 0  , 2* Math.PI)
+        this.ctx.fill();
         this.ctx.stroke();
 
     }
 
-    drawLine(fromX:number, fromY:number , toX:number, toY:number ){
+    drawLine(fromX:number, fromY:number , toX:number, toY:number ,  strokeWidth: number, strokeFill: string){
+        strokeWidth = strokeWidth || 1;
+        strokeFill = strokeFill || "rgba(255, 255, 255)";
+
         this.ctx.beginPath()
+        this.ctx.strokeStyle = strokeFill;
+        this.ctx.lineWidth = strokeWidth;    
+
         this.ctx.moveTo(fromX, fromY)
         this.ctx.lineTo(toX, toY)
         this.ctx.stroke()
     }
 
-    drawPencil(points: {x:number, y:number}[]){
+    drawPencil(points: {x:number, y:number}[], strokeWidth: number, strokeFill: string){
         this.ctx.beginPath()
+        this.ctx.strokeStyle = strokeFill;
+        this.ctx.lineWidth = strokeWidth;
         if(points[0] === undefined) return null;
         this.ctx.moveTo(points[0].x , points[0].y)
         points.forEach(point => this.ctx.lineTo(point.x, point.y))
@@ -381,7 +442,10 @@ export class Game {
                 x: this.startX,
                 y: this.startY,
                 width,
-                height
+                height,
+                strokeWidth: this.strokeWidth,
+                strokeFill: this.strokeFill,
+                bgFill: this.bgFill
             } 
         } else if(this.activeTool === "ellipse"){
 
@@ -395,7 +459,10 @@ export class Game {
                 centerX,
                 centerY,
                 radX,
-                radY
+                radY,
+                strokeWidth: this.strokeWidth,
+                strokeFill: this.strokeFill,
+                bgFill: this.bgFill
             }
         } else if (this.activeTool === "line"){
             shape = {
@@ -403,14 +470,20 @@ export class Game {
                 fromX: this.startX,
                 fromY: this.startY,
                 toX: x,
-                toY: y
+                toY: y,
+                strokeWidth: this.strokeWidth,
+                strokeFill: this.strokeFill,
+
             }
         } else if (this.activeTool === "pencil"){
             const currentShape = this.existingShape[this.existingShape.length - 1]
             if(currentShape?.type === "pencil"){
                 shape={
                     type: "pencil",
-                    points: currentShape.points
+                    points: currentShape.points,
+                    strokeWidth: this.strokeWidth,
+                    strokeFill: this.strokeFill,
+
                 }
             }
             
@@ -472,7 +545,7 @@ export class Game {
     onScaleChange(scale: number) {
         this.outputScale = scale;
         if (this.onScaleChangeCallback) {
-            this.onScaleChangeCallback(scale); // Notify the Canvas component
+            this.onScaleChangeCallback(scale);
         }
     }
 

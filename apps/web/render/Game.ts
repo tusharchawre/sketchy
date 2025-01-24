@@ -92,6 +92,7 @@ export class Game {
         this.canvas.addEventListener("mousedown", this.mouseDownHandler)
         this.canvas.addEventListener("mousemove", this.mouseMoveHandler)
         this.canvas.addEventListener("mouseup", this.mouseUpHandler)
+        this.canvas.addEventListener("wheel", this.mouseWheelHandler)
     }
 
     setTool(tool : Tool){
@@ -108,7 +109,13 @@ export class Game {
             this.canvas.width / this.scale, 
             this.canvas.height/ this.scale);
         this.ctx.fillStyle = "rgba(18, 18, 18)"
-        this.ctx.fillRect( 0 , 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillRect(  
+            // Adjusts the offset of the canvas
+            -this.panX / this.scale, 
+            -this.panY / this.scale, 
+            // Adjusts the scale of the canvas
+            this.canvas.width/ this.scale, 
+            this.canvas.height / this.scale);
         this.ctx.strokeStyle = "rgba(255, 255, 255)"
 
 
@@ -133,24 +140,35 @@ export class Game {
 
     mouseDownHandler = (e : MouseEvent) => {
         this.clicked = true
-        this.startX = e.clientX
-        this.startY = e.clientY
+
+        const { x, y } = this.transformPanScale(e.clientX, e.clientY);
+
+        this.startX = x
+        this.startY = y
 
         if(this.activeTool === "pencil"){
             this.existingShape.push({
                 type: "pencil",
-                points: [{x: this.startX, y: this.startY}]
+                points: [{x , y}]
             })
         }
         else if (this.activeTool === "erase") {
-            this.erase(this.startX, this.startY);
+            this.erase(x  , y);
+        } else if (this.activeTool === "grab") {
+            this.startX = e.clientX;
+            this.startY = e.clientY;
         }
     }
 
     mouseMoveHandler = (e: MouseEvent)=>{
         if(this.clicked){
-            const width = e.clientX - this.startX
-            const height = e.clientY - this.startY
+
+            const {x ,y} = this.transformPanScale(e.clientX , e.clientY)
+
+
+            const width = x - this.startX
+            const height = y - this.startY
+    
             this.clearCanvas()
             this.ctx.strokeStyle = "rgba(255, 255, 255)";
 
@@ -175,17 +193,33 @@ export class Game {
                     radY
                 )
             } else if(activeTool === "line"){
-                this.drawLine(this.startX,this.startY,e.clientX,e.clientY)
+                this.drawLine(this.startX,this.startY,x,y)
             } else if(activeTool === "pencil"){
                 const currentShape = this.existingShape[this.existingShape.length - 1]
                 if(currentShape?.type === "pencil" ){
-                    currentShape.points.push({x: e.clientX , y: e.clientY})
+                    currentShape.points.push({x , y})
                     this.drawPencil(currentShape.points)
                 }
             } else if (activeTool === "erase"){
-                const x = e.clientX
-                const y = e.clientY
                 this.erase(x, y)
+            }   
+             else if (activeTool === "grab"){
+                const { x: transformedX, y: transformedY } = this.transformPanScale(e.clientX, e.clientY);
+                const { x: startTransformedX, y: startTransformedY } = this.transformPanScale(this.startX, this.startY);
+            
+                const deltaX = transformedX - startTransformedX;
+                const deltaY = transformedY - startTransformedY;
+            
+
+                this.panX += deltaX * this.scale;
+                this.panY += deltaY * this.scale;
+            
+
+                this.startX = e.clientX;
+                this.startY = e.clientY;
+            
+                this.clearCanvas();
+
             }
 
 
@@ -229,6 +263,13 @@ export class Game {
             );
         }
         return false;
+    }
+
+
+    transformPanScale(clientX:number,clientY:number) : {x:number ; y:number}{
+        const x = (clientX - this.panX) / this.scale
+        const y = (clientY - this.panY) / this.scale
+        return {x ,y}
     }
     
 
@@ -284,9 +325,10 @@ export class Game {
     }
 
     erase(x: number , y:number){
+        const transformedPoint = this.transformPanScale(x, y);
 
         const shapeIndex = this.existingShape.findIndex((shape) =>
-            this.isPointInShape(x, y, shape)
+            this.isPointInShape(transformedPoint.x, transformedPoint.y, shape)
         );
     
         if (shapeIndex !== -1) {
@@ -309,8 +351,9 @@ export class Game {
     mouseUpHandler = (e: MouseEvent) => {
         this.clicked= false
 
-        const width = e.clientX - this.startX
-        const height = e.clientY - this.startY
+        const { x, y } = this.transformPanScale(e.clientX, e.clientY);
+        const width = x - this.startX;
+        const height = y - this.startY;
 
         let shape : Shape | null = null
         if(this.activeTool === "rect"){
@@ -340,8 +383,8 @@ export class Game {
                 type: "line",
                 fromX: this.startX,
                 fromY: this.startY,
-                toX: e.clientX,
-                toY: e.clientY
+                toX: x,
+                toY: y
             }
         } else if (this.activeTool === "pencil"){
             const currentShape = this.existingShape[this.existingShape.length - 1]
@@ -352,7 +395,10 @@ export class Game {
                 }
             }
             
-        } 
+        } else if (this.activeTool === "grab"){
+            this.startX = e.clientX 
+            this.startY = e.clientY 
+        }
          
 
         if(!shape){
@@ -368,18 +414,37 @@ export class Game {
             }),
             roomId: this.roomId
         }))
-
-
-
-      
-
     }
+
+
+
+    mouseWheelHandler = (e : WheelEvent) => {
+        e.preventDefault();
+
+        const scaleAmount = -e.deltaY / 200;
+        const newScale = this.scale * (1 + scaleAmount); 
+
+        const mouseX = e.clientX - this.canvas.offsetLeft;
+        const mouseY = e.clientY - this.canvas.offsetTop;
+        // Position of cursor on canvas
+        const canvasMouseX = (mouseX - this.panX) / this.scale;
+        const canvasMouseY = (mouseY - this.panY) / this.scale;
+
+        this.panX -= (canvasMouseX * (newScale - this.scale));
+        this.panY -= (canvasMouseY * (newScale - this.scale));
+
+        this.scale = newScale;
+    
+        this.clearCanvas();
+        
+    };
 
 
     destroy() {
         this.canvas.removeEventListener("mousedown", this.mouseDownHandler)
         this.canvas.removeEventListener("mousemove", this.mouseMoveHandler)
         this.canvas.removeEventListener("mouseup", this.mouseUpHandler)
+        this.canvas.removeEventListener("wheel" , this.mouseWheelHandler)
     }
 
 

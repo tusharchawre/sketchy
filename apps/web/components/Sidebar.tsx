@@ -6,7 +6,7 @@ interface SidebarProps {
     activeTool: Tool;
     strokeFill: strokeFill;
     setStrokeFill: React.Dispatch<React.SetStateAction<strokeFill>>;
-    strokeWidth: number;
+    strokeWidth: strokeWidth;
     setStrokeWidth: React.Dispatch<React.SetStateAction<strokeWidth>>;
     bgFill: bgFill;
     setBgFill: React.Dispatch<React.SetStateAction<bgFill>>;
@@ -29,6 +29,8 @@ export const Sidebar = ({
         "rgba(183, 98, 42)",
     ];
 
+    const strokeWidths: strokeWidth[] = [1, 2, 4]
+
     const bgFills: bgFill[] = [
         "rgba(0, 0, 0, 0)",
         "rgba(89, 49, 49)",
@@ -42,8 +44,8 @@ export const Sidebar = ({
     }
 
     return (
-        <div className="fixed left-10 top-[50%] bg-[#232329] px-2 py-4 rounded-md -translate-y-[50%] w-fit h-fit text-white">
-            <div className="flex flex-col gap-2 justify-around items-start w-full h-full">
+        <div className="fixed left-10 top-[50%] bg-[#232329] px-2 py-4 rounded-md -translate-y-[50%] w-fit h-1/2 text-white">
+            <div className="flex flex-col gap-2 justify-start items-start w-full h-full">
                 <div>
                 <p className="text-sm text-white/70 mb-1">Stroke</p>
                 <div className="flex gap-2 h-7 items-center">
@@ -80,6 +82,24 @@ export const Sidebar = ({
 
                 </div>
                 </div>
+
+
+                <div>
+                <p className="text-sm text-white/70 mb-1">Stroke Width</p>
+                <div className="flex gap-2 h-7 items-center">
+                    {strokeWidths.map((strokeWidth, index) => (
+                        <StrokeWidthIndicator
+                            key={index}
+                            strokeWidth={strokeWidth}
+                            onClick={() => setStrokeWidth(strokeWidth)}
+                        />
+                    ))}
+
+            
+
+
+                </div>
+                </div>
             </div>
         </div>
     );
@@ -94,7 +114,7 @@ const ColorFillIndicator = ({
 }) => {
     return (
         <div
-            className="w-5 h-5 rounded-sm cursor-pointer hover:border border-white/70 transition-all"
+            className="w-[1.4rem] h-[1.4rem] rounded-sm cursor-pointer hover:border border-white/70 transition-all"
             style={{ backgroundColor: color }}
             onClick={onClick}
         >
@@ -112,9 +132,22 @@ const ColorBgIndicator = ({
 }) => {
     return (
         <div
-       className={"w-5 h-5 rounded-sm cursor-pointer hover:border border-white/70 transition-all " + `${color === "rgba(0, 0, 0, 0)" ? "border border-white/30"  : ""}`}
+       className={"w-[1.4rem] h-[1.4rem] rounded-sm cursor-pointer hover:border border-white/70 transition-all " + `${color === "rgba(0, 0, 0, 0)" ? "border border-white/30"  : ""}`}
            style={{ backgroundColor: color }}
             onClick={onClick}
         ></div>
     );
 };
+
+
+const StrokeWidthIndicator = ({strokeWidth, onClick}: {strokeWidth: strokeWidth, onClick?: () => void}) => {
+   return <div
+    className={"w-[1.4rem] h-[1.4rem] rounded-sm cursor-pointer hover:border-white-70 border-white/10 border transition-all flex items-center"}
+         onClick={onClick}
+     >
+        <div
+                style={{ height: `${strokeWidth}px` }}
+                className="w-full bg-white/80"
+            />
+    </div>
+}

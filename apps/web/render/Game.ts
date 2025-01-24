@@ -39,8 +39,16 @@ export class Game {
     private panX: number = 0
     private panY: number = 0
     private scale: number = 1
+    private onScaleChangeCallback: (scale: number) => void;
+    public outputScale: number = 1
 
-    constructor(canvas: HTMLCanvasElement , roomId: string , socket: WebSocket, room: any){
+    constructor(
+        canvas: HTMLCanvasElement , 
+        roomId: string , 
+        socket: WebSocket, 
+        room: any,  
+        onScaleChangeCallback: (scale: number) => void
+){
         this.canvas = canvas
         this.ctx = canvas.getContext("2d")!
         this.roomId = roomId
@@ -49,6 +57,7 @@ export class Game {
         this.existingShape = []
         this.canvas.width = document.body.clientWidth
         this.canvas.height = document.body.clientHeight
+        this.onScaleChangeCallback = onScaleChangeCallback;
         this.room = room
         this.init()
         this.initHandler()
@@ -87,6 +96,8 @@ export class Game {
 
         }
     }
+
+
 
     initMouseHandler(){
         this.canvas.addEventListener("mousedown", this.mouseDownHandler)
@@ -210,42 +221,41 @@ export class Game {
                 const deltaX = transformedX - startTransformedX;
                 const deltaY = transformedY - startTransformedY;
             
-
                 this.panX += deltaX * this.scale;
                 this.panY += deltaY * this.scale;
-            
-
                 this.startX = e.clientX;
                 this.startY = e.clientY;
-            
                 this.clearCanvas();
-
             }
-
-
         }
     }
 
 
     // Collision Detection => Chat GPT
-
     isPointInShape(x: number, y: number, shape: Shape): boolean {
+        const tolerance = 5; 
+    
         if (shape.type === "rect") {
+            const startX = Math.min(shape.x, shape.x + shape.width);
+            const endX = Math.max(shape.x, shape.x + shape.width);
+            const startY = Math.min(shape.y, shape.y + shape.height);
+            const endY = Math.max(shape.y, shape.y + shape.height);
+    
             return (
-                x >= shape.x &&
-                x <= shape.x + shape.width &&
-                y >= shape.y &&
-                y <= shape.y + shape.height
+                x >= startX - tolerance &&
+                x <= endX + tolerance &&
+                y >= startY - tolerance &&
+                y <= endY + tolerance
             );
         } else if (shape.type === "ellipse") {
             const dx = x - shape.centerX;
             const dy = y - shape.centerY;
-            return (
-                (dx * dx) / (shape.radX * shape.radX) +
-                (dy * dy) / (shape.radY * shape.radY) <= 1
-            );
+            const normalized = 
+                (dx * dx) / ((shape.radX + tolerance) * (shape.radX + tolerance)) +
+                (dy * dy) / ((shape.radY + tolerance) * (shape.radY + tolerance));
+            return normalized <= 1;
         } else if (shape.type === "line") {
-            const length = Math.hypot(
+            const lineLength = Math.hypot(
                 shape.toX - shape.fromX,
                 shape.toY - shape.fromY
             );
@@ -255,15 +265,24 @@ export class Game {
                     (shape.toX - shape.fromX) * y +
                     shape.toX * shape.fromY -
                     shape.toY * shape.fromX
-                ) / length;
-            return distance < 5; 
+                ) / lineLength;
+    
+            const withinLineBounds =
+                x >= Math.min(shape.fromX, shape.toX) - tolerance &&
+                x <= Math.max(shape.fromX, shape.toX) + tolerance &&
+                y >= Math.min(shape.fromY, shape.toY) - tolerance &&
+                y <= Math.max(shape.fromY, shape.toY) + tolerance;
+    
+            return distance <= tolerance && withinLineBounds;
         } else if (shape.type === "pencil") {
             return shape.points.some(
-                (point) => Math.hypot(point.x - x, point.y - y) < 5 
+                (point) => Math.hypot(point.x - x, point.y - y) <= tolerance
             );
         }
+    
         return false;
     }
+    
 
 
     transformPanScale(clientX:number,clientY:number) : {x:number ; y:number}{
@@ -434,7 +453,8 @@ export class Game {
         this.panY -= (canvasMouseY * (newScale - this.scale));
 
         this.scale = newScale;
-    
+        
+        this.onScaleChange(this.scale)
         this.clearCanvas();
         
     };
@@ -445,6 +465,15 @@ export class Game {
         this.canvas.removeEventListener("mousemove", this.mouseMoveHandler)
         this.canvas.removeEventListener("mouseup", this.mouseUpHandler)
         this.canvas.removeEventListener("wheel" , this.mouseWheelHandler)
+    }
+
+
+
+    onScaleChange(scale: number) {
+        this.outputScale = scale;
+        if (this.onScaleChangeCallback) {
+            this.onScaleChangeCallback(scale); // Notify the Canvas component
+        }
     }
 
 
